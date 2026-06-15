@@ -91,15 +91,45 @@ h2{color:var(--indigo-dark);margin:0 0 6px;font-size:25px;letter-spacing:-.5px;}
 .winter-bright { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #ffffff !important; }
 .winter-deep { background: linear-gradient(135deg, #0f172a, #1e1b4b); color: #f8fafc !important; }
 .winter-cool { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff !important; }
+
+/* BGM 버튼 스타일 추가 */
+.bgm-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 50px;
+  height: 50px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: all 0.3s ease;
+}
+.bgm-btn:hover {
+  transform: scale(1.08);
+  background: #f4f5ff;
+}
 </style>
 </head>
 <body>
+
+<audio id="bgmAudio" loop>
+  <source src="pro.mp3" type="audio/mpeg">
+</audio>
+<button id="bgmToggle" class="bgm-btn" aria-label="배경음악 재생/정지">🔇</button>
+
 <div id="wrapper">
   <div class="badge">AI PERSONAL COLOR · OOTD GENERATOR</div>
   <h2>🤖 12톤 퍼스널 컬러 정밀 진단</h2>
   <div class="sub-title">사진을 올리면 AI가 12톤 기준 정밀 진단을 수행하고,<br/>찰떡 헤어/메이크업과 맞춤형 코디를 즉시 생성합니다.</div>
 
-  <label class="uploader" for="imageLoader">
+  <label class="uploader" for="imageLoader" id="uploaderLabel">
     <strong>📷 정면 얼굴 사진 업로드</strong>
     <span>그림자가 없는 자연광 사진일수록 정확합니다.</span>
   </label>
@@ -138,6 +168,7 @@ h2{color:var(--indigo-dark);margin:0 0 6px;font-size:25px;letter-spacing:-.5px;}
 </div>
 
 <script>
+// --- 기존 요소 선언 ---
 const imageLoader=document.getElementById('imageLoader'),preview=document.getElementById('preview'),
 overlay=document.getElementById('overlay'),ctx=overlay.getContext('2d'),statusMsg=document.getElementById('statusMsg'),
 viewBox=document.getElementById('viewBox'),cards=document.getElementById('cards'),
@@ -148,6 +179,38 @@ resultDesc=document.getElementById('resultDesc'),palletBox=document.getElementBy
 detailBox=document.getElementById('detailBox'),coordBox=document.getElementById('coordBox'),
 coordContent=document.getElementById('coordContent');
 let detector=null,currentClass=null,currentGender='female';
+
+// --- 추가된 BGM 제어 스크립트 시작 ---
+const bgmAudio = document.getElementById('bgmAudio');
+const bgmToggle = document.getElementById('bgmToggle');
+const uploaderLabel = document.getElementById('uploaderLabel');
+let isMusicPlaying = false;
+
+// 1. 버튼 클릭 시 재생/정지 토글 기능
+bgmToggle.addEventListener('click', () => {
+  if (isMusicPlaying) {
+    bgmAudio.pause();
+    bgmToggle.textContent = '🔇';
+  } else {
+    bgmAudio.play().catch(e => console.error("오디오 재생 실패:", e));
+    bgmToggle.textContent = '🔊';
+  }
+  isMusicPlaying = !isMusicPlaying;
+});
+
+// 2. 파일 업로드 영역 클릭 시 음악 자동 시작 (브라우저 정책 우회용)
+uploaderLabel.addEventListener('click', () => {
+  if (!isMusicPlaying) {
+    bgmAudio.play().then(() => {
+      bgmToggle.textContent = '🔊';
+      isMusicPlaying = true;
+    }).catch(e => {
+      console.log("자동 재생이 차단되었습니다. 사용자가 버튼을 눌러야 합니다.");
+    });
+  }
+});
+// --- 추가된 BGM 제어 스크립트 끝 ---
+
 
 // 렌더링에 필요한 무작위 생성용 패션 엔진 백본
 const fashionEngine = {
@@ -301,8 +364,6 @@ preview.onload=async function(){
     
     skinHexEl.textContent=skinHex;skinSwatch.style.background=skinHex;
     eyeHexEl.textContent=eyeHex;eyeSwatch.style.background=eyeHex;
-    
-    /* 빨간 링(drawCircle) 그리는 로직 완전 삭제 처리됨 */
     
     diagnose(skinHex,eyeHex);
   }catch(err){setStatus("❌ 분석 중 오류가 발생했습니다.");console.error(err);}
